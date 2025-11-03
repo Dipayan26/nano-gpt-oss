@@ -1,1 +1,27 @@
-venv
+# Virtual environment
+venv/
+
+# Model checkpoints (PyTorch weights, etc.)
+model/
+*.pt
+
+# Weights & Biases logs and runs
+wandb/
+*.wandb
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs and temporary outputs
+logs/
+*.log
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+
