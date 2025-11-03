@@ -34,8 +34,6 @@ len(val_tokens)
 
 # print(range(0, len(train_tokens) - 8192, 8192))
 
-
-
 class TextDataset(Dataset):
     def __init__(self, tokens, max_length=8192, stride=8192):
         self.input_ids = []
