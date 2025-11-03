@@ -6,7 +6,7 @@ from datasets import load_dataset
 # from tqdm.notebook import tqdm
 from tqdm import tqdm
 batch_size=5
-context_len=50
+context_len=500
 
 dataset = load_dataset("roneneldan/TinyStories")
 
