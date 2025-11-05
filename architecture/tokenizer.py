@@ -1,5 +1,4 @@
 import tiktoken
-
 def get_tokenizer():
     o200k_base = tiktoken.get_encoding("o200k_base")
     tokenizer = tiktoken.Encoding(

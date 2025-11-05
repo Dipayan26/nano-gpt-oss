@@ -6,9 +6,11 @@ from datasets import load_dataset
 # from tqdm.notebook import tqdm
 from tqdm import tqdm
 batch_size=5
-context_len=500
+context_len=10
 
 dataset = load_dataset("roneneldan/TinyStories")
+
+dataset2 = dataset['train']['text'][2]
 
 train_text = " ".join([ex["text"] for ex in dataset['train']])
 val_text = " ".join([ex["text"] for ex in dataset['validation']])
@@ -16,16 +18,16 @@ val_text = " ".join([ex["text"] for ex in dataset['validation']])
 # train_text = " ".join([ex["text"] for ex in dataset['train']])
 # val_text = " ".join([ex["text"] for ex in dataset['validation']])
 
-# dataset['train']['text'][0]
-# train_text[0:10]
+dataset['train']['text'][0]
+train_text[0:10]
 # train_text[0:10]
 
 tokenizer = get_tokenizer()
 print("tokenizing...")
 
 # train_tokens = tokenizer.encode(train_text[0:10])
-train_tokens = tokenizer.encode(train_text[:100000])
-val_tokens = tokenizer.encode(val_text[:10000])
+train_tokens = tokenizer.encode(train_text[:100])
+val_tokens = tokenizer.encode(val_text[:100])
 print("tokenized")
 
 
@@ -33,7 +35,7 @@ len(train_tokens)
 len(val_tokens)
 
 # print(range(0, len(train_tokens) - 8192, 8192))
-
+#max_length= context_len = 10 not 8192
 class TextDataset(Dataset):
     def __init__(self, tokens, max_length=8192, stride=8192):
         self.input_ids = []
@@ -60,6 +62,9 @@ class TextDataset(Dataset):
 train_dataset = TextDataset(train_tokens, max_length=context_len, stride=context_len)
 val_dataset = TextDataset(val_tokens, max_length=context_len, stride=context_len)
 
+train_dataset[0]
+train_dataset[1]
+train_dataset[2]
 # val_dataset[0]
 
 
