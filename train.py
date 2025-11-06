@@ -27,8 +27,6 @@ if __name__ == "__main__":
     # This line will now only be run by the main process
     tl, vl, ts = trainer(model, train_loader, val_loader, device)
 
-
-
     # device = "cuda:0"
 
     # model = Transformer(ModelConfig(

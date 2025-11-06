@@ -32,8 +32,8 @@ class ModelConfig:
 
 class RMSNorm(torch.nn.Module):
     def __init__(
-        self, num_features: int, eps: float = 1e-05, device: torch.device | None = None
-    ):
+        self, num_features: int, eps: float = 1e-05, device: torch.device | None = None):
+        
         super().__init__()
         self.num_features = num_features
         self.eps = eps

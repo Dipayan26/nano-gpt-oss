@@ -26,7 +26,7 @@ tokenizer = get_tokenizer()
 print("tokenizing...")
 
 # train_tokens = tokenizer.encode(train_text[0:10])
-train_tokens = tokenizer.encode(train_text[:100])
+train_tokens = tokenizer.encode(train_text[:500])
 val_tokens = tokenizer.encode(val_text[:100])
 print("tokenized")
 
