@@ -39,7 +39,7 @@ def token_ids_to_text(token_ids, tokenizer):
 
 
 
-def generate_text(model, prompt, max_tokens=5, temperature=0.8, top_k=50):
+def generate_text(model, prompt, max_tokens=100, temperature=0.8, top_k=50):
     """Generate text from a prompt using trained model."""
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
@@ -62,22 +62,47 @@ def generate_text(model, prompt, max_tokens=5, temperature=0.8, top_k=50):
         
         if top_k is not None:
             v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-            print("v is :")
-            print(v)
+            # here v is top k which is arranged in descending order from big to small
+            # print("v is :")
+            # print(v)
+            '''
+            tensor([7.1562, 7.0312, 6.6875, 6.5625, 6.5625, 6.4375, 6.3750, 5.3438, 5.2812,
+            4.9688, 4.9375, 4.8750, 4.8125, 4.7188, 4.6875, 4.6562, 4.5625, 4.3438,
+            4.3438, 4.3438, 4.2500, 4.2188, 4.1875, 4.1875, 4.1562, 4.0938, 4.0625,
+            4.0000, 3.9688, 3.9688, 3.9219, 3.7344, 3.7344, 3.7188, 3.7188, 3.6875,
+            3.5000, 3.4531, 3.4219, 3.4062, 3.3750, 3.3125, 3.2969, 3.2812, 3.2500,
+            3.2500, 3.2031, 3.1875, 3.1562, 3.1562], device='cuda:0',
+            dtype=torch.bfloat16)
+            '''
+            # print(v[[-1]]) #tensor([3.1562], device='cuda:0', dtype=torch.bfloat16)
+            
             logits[logits < v[[-1]]] = -float('Inf')
-            print(v[[-1]])
-            print(logits)
-            print(logits.shape)
+            # now take the last value of top k (3.1562) which is the smallest value among top k, set it as a cutoff  and set all the logits( total 201088) and those which are less than that to the lowest top k value i.e (eg 3.1526) will be converted to -inf so that when we apply softmax those will become zero probablity
+            '''
+            logits < v[[-1]]  # creates a boolean mask where True indicates logits less than the cutoff
+            # tensor([ True, False, True, False, True])
+            now here ## logits[logits < v[[-1]]] = -float('Inf')  For every element in logits 
+            that satisfies means which is less than the last value --> which became true-->  logits < v[[-1]], replaced it with -∞.   
+            
+            '''
+            
+            # print(logits)
+            '''
+            tensor([4., -inf, -inf,  ..., -inf, -inf, -inf], device='cuda:0', dtype=torch.bfloat16)
+            '''
+            # print(logits.shape) #torch.Size([201088])
             
 
         probs = F.softmax(logits, dim=-1)
         idx_next = torch.multinomial(probs, num_samples=1)
+        print(idx_next)
         idx = torch.cat((idx, idx_next), dim=0)
 
     
     # Decode and return
     result = token_ids_to_text(idx,tokenizer)
     return result
+
 
 
 context = "paris located in"
