@@ -62,9 +62,6 @@ def evaluate_model(model, train_loader, val_loader, device, eval_iter):
 
 
 
-
-
-
 def train_model(model, train_loader, val_loader, optimizer,scheduler, device, num_epochs,
                        eval_freq, eval_iter, start_context):
     
@@ -127,9 +124,12 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
         
     return train_losses, val_losses, track_tokens_seen
 
+
+
+
 def trainer(model,train_loader,val_loader,device):
     learning_rate = 3e-4        
-    max_iters = 5         
+    max_iters = 5   ## usually 2000 or more for real training should be more than the warmup_steps then the T_max of cosine decay will be max_iters - warmup_steps and will be positive 
     warmup_steps = 100    
     min_lr = 3e-5           
     eval_iters = 5
@@ -143,10 +143,25 @@ def trainer(model,train_loader,val_loader,device):
     if os.path.exists('model/gptoss.pt'):
         model.load_state_dict(torch.load('model/gptoss.pt'))
     
+    #_________________________________________________________________________
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.1)
     scheduler_warmup = LinearLR(optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_steps)
-    scheduler_decay = CosineAnnealingLR(optimizer, T_max=max_iters - warmup_steps, eta_min=min_lr)
+    #“Hey optimizer, don’t go full speed from the start — slowly accelerate.” So it starts at 0.00003 and gradually increases to 0.0003 (your target learning rate).
+    scheduler_decay = CosineAnnealingLR(optimizer, T_max=max_iters - warmup_steps, eta_min=min_lr)#Cosine decay, T_max is total decay steps
     scheduler = SequentialLR(optimizer, schedulers=[scheduler_warmup, scheduler_decay], milestones=[warmup_steps])
+    '''"scheduler" chains two schedulers (scheduler_warmup and scheduler_decay) together:
+    From step 0 → 99 → use scheduler_warmup
+    From step 100 → max_iters → use scheduler_decay
+    After step 100, control automatically passes to the cosine scheduler.
+    milestone is the step where we switch from warmup to decay.
+    tmax == is the total number of steps for decay after warmup or the total number of steps over which LR decays from max to min once.
+    Since max_iters=5 and warmup_steps=100, this means you have fewer total steps than warmup steps.
+    That doesnt make sense — the scheduler never reaches the cosine phase.
+    '''
+    #_________________________________________________________________________
+        
+    
+    
     num_epochs=max_iters
 
 
@@ -180,3 +195,12 @@ def trainer(model,train_loader,val_loader,device):
     wandb.finish()
     print(f"Training completed in {execution_time_minutes:.2f} minutes.") 
     return train_losses,val_losses,tokens_seen
+
+
+
+
+
+
+
+
+

@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
     # This line will now only be run by the main process
     tl, vl, ts = trainer(model, train_loader, val_loader, device)
+    #tl, vl, ts is train_losses,val_losses,tokens_seen is 
 
     # device = "cuda:0"
 
@@ -42,5 +43,8 @@ if __name__ == "__main__":
 
     context = "Once upon a day"
     # These lines should also be inside the block
-    torch.save(model.state_dict(), r"model\gptoss.pt")
+    # torch.save(model.state_dict(), r"model\gptoss.pt")
     generate_text(model, context)
+    
+    
+    

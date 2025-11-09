@@ -29,7 +29,8 @@ class ModelConfig:
     rope_ntk_alpha: float = 1.0
     rope_ntk_beta: float = 32.0
 
-
+#####################################################################
+#####################################################################
 class RMSNorm(torch.nn.Module):
     def __init__(
         self, num_features: int, eps: float = 1e-05, device: torch.device | None = None):
@@ -48,6 +49,7 @@ class RMSNorm(torch.nn.Module):
         return (t * self.scale).to(dtype)
 
 
+
 def _apply_rotary_emb(
     x: torch.Tensor,
     cos: torch.Tensor,
@@ -59,6 +61,7 @@ def _apply_rotary_emb(
     o1 = x1 * cos - x2 * sin
     o2 = x2 * cos + x1 * sin
     return torch.cat((o1, o2), dim=-1)
+
 
 
 class RotaryEmbedding(torch.nn.Module):
@@ -151,6 +154,7 @@ class RotaryEmbedding(torch.nn.Module):
         return query, key
 
 
+## sliding window attention with sinks
 def sdpa(Q, K, V, S, sm_scale, sliding_window=0):
     # sliding_window == 0 means no sliding window
     n_tokens, n_heads, q_mult, d_head = Q.shape
@@ -173,7 +177,8 @@ def sdpa(Q, K, V, S, sm_scale, sliding_window=0):
     attn = torch.einsum("hmqk,khmd->qhmd", W, V)
     return attn.reshape(n_tokens, -1)
 
-
+################################################################################# 
+################################################################################# 
 class AttentionBlock(torch.nn.Module):
     def __init__(
         self,
@@ -247,6 +252,7 @@ class AttentionBlock(torch.nn.Module):
         return t
 
 
+#-- MLP with SWIGLU activation and Mixture of Experts --
 def swiglu(x, alpha: float = 1.702, limit: float = 7.0):
     x_glu, x_linear = x[..., ::2], x[..., 1::2]
     # Clamp the input values
@@ -256,6 +262,9 @@ def swiglu(x, alpha: float = 1.702, limit: float = 7.0):
     # Note we add an extra bias of 1 to the linear layer
     return out_glu * (x_linear + 1)
 
+
+
+# Mixture of Experts
 class MLPBlock(torch.nn.Module):
 
     def __init__(
