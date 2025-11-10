@@ -382,7 +382,6 @@ t = sdpa(q, k, v, sinks, sm_scale, sliding_window)
 
 t.shape
 
-
 #_______________________________________________________________
 #_______________________________________________________________
 #_______________________________________________________________
@@ -405,6 +404,7 @@ class ModelConfig:
     rope_scaling_factor: float = 32.0
     rope_ntk_alpha: float = 1.0
     rope_ntk_beta: float = 32.0
+
 
 class AttentionBlock(torch.nn.Module):
     def __init__(
@@ -460,6 +460,7 @@ class AttentionBlock(torch.nn.Module):
         ## spliting the qkv into q , k , v ##############        
         #splitting the Query 
         q = qkv[:, : self.num_attention_heads * self.head_dim].contiguous()
+        
         #splitting the Key
         k = qkv[
             :,
@@ -467,6 +468,7 @@ class AttentionBlock(torch.nn.Module):
             * self.head_dim : (self.num_attention_heads + self.num_key_value_heads)
             * self.head_dim,
         ].contiguous()
+        
         #splitting the Value
         v = qkv[
             :,
@@ -497,10 +499,11 @@ class AttentionBlock(torch.nn.Module):
 
 
 
-
-
-
-a = torch.randn( 5, 2560)  # (batch_size, seq_length , hidden_size)
+a = torch.randn( (5, 2880), dtype=torch.bfloat16) # (batch_size, seq_length , hidden_size)
+a.dtype
+block = AttentionBlock(ModelConfig(), layer_idx=2)
+out = block(a)
+out.shape
 
 
 
