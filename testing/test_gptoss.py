@@ -684,6 +684,7 @@ class MLPBlock(torch.nn.Module):
         
         self.norm = RMSNorm(config.hidden_size, device=device)
         
+        #gate choose the experts for each token, its  a linear layer which will output num_experts logits for each token
         self.gate = torch.nn.Linear(
             config.hidden_size, config.num_experts, device=device, dtype=torch.bfloat16
         )
@@ -742,39 +743,173 @@ class MLPBlock(torch.nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         seq_len, hidden_size = x.shape #[5,2880]-->  (seq_length/ tokens-->5, hidden_size-->2880)
-        t = self.norm(x) # RMSNorm
+        t = self.norm(x) # RMSNorm # shape [5,2880]
         g = self.gate(t) #32 experts logits  #[5,32]--> (seq_length/ tokens-->5, num_experts-->32)
         
-        # Get top-k experts
+        # Get top-k experts means top 4 among 32 experts for each token
+        #For each token, take top 4 experts with highest gate score.
         experts = torch.topk(g, k=self.experts_per_token, dim=-1, sorted=True)
         expert_weights = torch.nn.functional.softmax(experts.values, dim=-1)
-        expert_indices = experts.indices
+        '''
+        We only softmax the top-4 scores (not all 32).
+        Softmax converts them into probabilities.
+        Each row sums to 1.0.
+        [2.3, 1.1, 0.5, -0.2] → softmax → [0.63, 0.23, 0.11, 0.03]
+        '''
+        expert_indices = experts.indices 
+        '''
+        # means the indices of top 4 experts for each token #This gives you the expert IDs (0 to 31) of those top experts. Shape: [5, 4]  is like for 5 tokens and there is 4 expert indices  for each token. 
+        liek this [
+                    [7, 3, 12, 1],
+                    [4, 19, 22, 7],
+                    [7, 3, 12, 1],
+                    [4, 19, 22, 7],
+                    [4, 19, 22, 7]
+                    ]
+        '''
         
         # Flatten for processing
-        t_flat = t.view(-1, hidden_size)
-        expert_indices_flat = expert_indices.view(-1, self.experts_per_token)
+        t_flat = t.view(-1, hidden_size) # shape [5, 2880]
+        '''
+        Today: input is [5, 2880]
+        Tomorrow if : input becomes [batch=4, seq=5, 2880]
+        Flattening keeps the same MoE logic working.
+        '''
+        expert_indices_flat = expert_indices.view(-1, self.experts_per_token)#experts_per_token = 4
         expert_weights_flat = expert_weights.view(-1, self.experts_per_token)
+        '''
+        t_flat               → [5, 2880]
+        expert_indices_flat  → [5, 4]
+        expert_weights_flat  → [5, 4]
+        '''
         
         output = torch.zeros_like(t_flat)
+        '''
+        This creates a zero-initialized tensor of the same shape as t_flat:
+        ✔ Why is this needed?
+        You will soon:
+        Send each token → selected experts
+        Let each expert process its assigned tokens
+        Gather outputs from experts
+        Add them back into this output buffer, weighted by routing softmax values
+        '''
         
+        '''
+        Quick reminder of variables before the loop
+            seq_len = 5, hidden_size = 2880
+            t_flat shape = [5, 2880] (one row per token)
+            expert_indices_flat shape = [5, 4] (top-4 expert IDs per token)
+            expert_weights_flat shape = [5, 4] (softmax weight per selected expert)
+            self.num_experts = 32, self.experts is a list/ModuleList of 32 expert modules (each an MLP, e.g. [Linear, SwiGLU, Linear])
+            output shape = [5, 2880] initialized zeros
+        '''
         # Process each expert
         for expert_idx in range(self.num_experts):
             mask = (expert_indices_flat == expert_idx).any(dim=-1)
-            
+            '''
+            expert_indices_flat == expert_idx returns a boolean tensor of shape [5, 4] telling which of the 4 slots equals expert_idx.
+            .any(dim=-1) reduces the 4 slots into a single boolean per token: shape [5].
+            mask[i] == True means token i uses this expert_idx in at least one of its top-k slots.
+            expert_indices_flat =
+                [[7, 3,12, 1],
+                [4,19,22, 7],
+                [7, 3,12, 1],
+                [4,19,22, 7],
+                [4,19,22, 7]]
+                If expert_idx = 7: #means which token is using expert 7 
+                (==7) =>    [[T,F,F,F],
+                            [F,F,F,T],
+                            [T,F,F,F],
+                            [F,F,F,F],
+                            [F,F,F,F]]
+                mask => [T, T, T, F, F]   # shape [5]
+                for each expert we are getting a list of booleans indicating which tokens are assigned to that expert., the token length here is 5 , but it can be large like If seq_len is large (e.g. 1024, 4096, or more), the mask tensor is size [seq_len] per expert.
+                
+                if not mask.any():
+                continue   ..... means--
+                If no token routed to a expert (mask all False) means skip this expert. This avoids unnecessary work.
+
+            '''
             if not mask.any():
                 continue
             
             token_indices = torch.where(mask)[0]
-            expert_pos = (expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)[1]
+            '''
+            torch.where(mask) returns indices of True entries. [0] extracts the 1-D vector of token indices., 
+            so we are getting the indices of tokens that are assigned to this expert(eg - expert 7 (expert_idx)).
+            Example:
+            eg----
+            mask = [True, True, True, False, False]
+            token_indices = torch.where(torch.tensor(mask))[0]
+            run---
+            >>> mask = [True, True, True, False, False]
+            >>> token_indices = torch.where(torch.tensor(mask))[0]
+            >>> token_indices
+            tensor([0, 1, 2])
+
+            '''
+            
+            expert_pos = (expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)[1]# expert position in top-k for each token where it used
+            '''
+            so what we are doing we are taking the token_indices whre the token is assigned to this expert and then we are checking in those tokens which position the expert is assigned.
+            >>> expert_idx = 7
+            >>> token_indices
+            tensor([0, 1, 2])
+            >>> expert_indices_flat =torch.Tensor([[7, 3,12, 1],
+            ...                                     [4,19,22, 7],
+            ...                                     [7, 3,12, 1],
+            ...                                     [4,19,22, 9],
+            ...                                     [4,19,22, 9]]
+            ... )
+            >>>
+            >>> expert_indices_flat[token_indices] == expert_idx
+            tensor([[ True, False, False, False],
+                    [False, False, False,  True],
+                    [ True, False, False, False]])
+            >>> (expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)
+            (tensor([0, 1, 2]), tensor([0, 3, 0]))
+            >>> (expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)[1]
+            tensor([0, 3, 0]) ## finally getting 
+            '''
             
             expert_input = t_flat[token_indices]
+            '''
+            #t_flat shape = [5, 2880] , so we are getting the inputs for the tokens assigned to this expert
+            token_indices ==  tensor([0, 1, 2])
+            
+            expert_input will be of shape [num_tokens_for_this_expert, 2880]
+            >>> expert_input = t_flat[token_indices]
+            >>> expert_input.shape
+            torch.Size([3, 2880])
+            #So here expert_input contains the input vectors for only those tokens that are assigned to the current expert (expert_idx).
+            '''
+            
+            
             weights = expert_weights_flat[token_indices, expert_pos]
+            '''
+            weight means how much importance we are giving to this expert for that token( token 7).
+            expert_weights_flat[token_indices] =
+                [[0.6,0.2,0.1,0.1],   # for token0
+                [0.05,0.10,0.20,0.65], # token1
+                [0.62,0.18,0.12,0.08]] # token2
+                
+                expert_pos = [0,3,0]
+                
+                weights = [0.6, 0.65, 0.62]  # shape [3]
+            '''
             
             # Forward through this expert
             expert_out = expert_input
             expert_out = self.experts[expert_idx][0](expert_out)  # First linear + activation
             expert_out = swiglu(expert_out, limit=self.swiglu_limit)
             expert_out = self.experts[expert_idx][1](expert_out)  # Second linear
+            '''
+            
+            
+            '''
+            
+            
+            
             
             output[token_indices] += expert_out * weights.unsqueeze(-1)
         
@@ -854,15 +989,22 @@ out = model(a)
 out.shape
 
 
+expert_idx = 7
+mask = [True, True, True, False, False]
+token_indices = torch.where(torch.tensor(mask))[0]
 
+expert_indices_flat =torch.Tensor([[7, 3,12, 1],
+                        [4,19,22, 7],
+                        [7, 3,12, 1],
+                        [4,19,22, 9],
+                        [4,19,22, 9]]
+)
 
+expert_indices_flat[token_indices] == expert_idx
 
+(expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)
 
-
-
-
-
-
+expert_pos = (expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)[1]
 
 
 
