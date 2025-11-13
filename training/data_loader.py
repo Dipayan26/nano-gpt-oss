@@ -10,7 +10,7 @@ context_len=10
 
 dataset = load_dataset("roneneldan/TinyStories")
 
-dataset2 = dataset['train']['text'][2]
+# dataset2 = dataset['train']['text'][2]
 
 train_text = " ".join([ex["text"] for ex in dataset['train']])
 val_text = " ".join([ex["text"] for ex in dataset['validation']])
@@ -18,21 +18,21 @@ val_text = " ".join([ex["text"] for ex in dataset['validation']])
 # train_text = " ".join([ex["text"] for ex in dataset['train']])
 # val_text = " ".join([ex["text"] for ex in dataset['validation']])
 
-dataset['train']['text'][0]
-train_text[0:10]
+# dataset['train']['text'][0]
 # train_text[0:10]
+# # train_text[0:10]
 
 tokenizer = get_tokenizer()
 print("tokenizing...")
 
 # train_tokens = tokenizer.encode(train_text[0:10])
-train_tokens = tokenizer.encode(train_text[:500])
-val_tokens = tokenizer.encode(val_text[:100])
+train_tokens = tokenizer.encode(train_text[:10000])
+val_tokens = tokenizer.encode(val_text[:1000])
 print("tokenized")
 
 
-len(train_tokens)
-len(val_tokens)
+# len(train_tokens)
+# len(val_tokens)
 
 # print(range(0, len(train_tokens) - 8192, 8192))
 #max_length= context_len = 10 not 8192
@@ -62,9 +62,9 @@ class TextDataset(Dataset):
 train_dataset = TextDataset(train_tokens, max_length=context_len, stride=context_len)
 val_dataset = TextDataset(val_tokens, max_length=context_len, stride=context_len)
 
-train_dataset[0]
-train_dataset[1]
-train_dataset[2]
+# train_dataset[0]
+# train_dataset[1]
+# train_dataset[2]
 # val_dataset[0]
 
 

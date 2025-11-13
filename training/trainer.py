@@ -103,7 +103,8 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
                        "lr": optimizer.param_groups[0]["lr"]
                        }, step=global_step)
             
-            if global_step % eval_freq == 0: # eval_freq means after how many steps we want to evaluate the model on 
+            if global_step % eval_freq == 0: 
+                # eval_freq means after how many steps we want to evaluate the model on 
                 # train and val set, here eval_freq=150 means after every 150 steps we will evaluate the model and the steps depend on batch size and dataset size
                 
                 train_loss, val_loss = evaluate_model(model, train_loader, val_loader, device, eval_iter)
@@ -111,7 +112,10 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
                 val_losses.append(val_loss)
                 track_tokens_seen.append(tokens_seen)
                 
-                print(f"Ep {epoch+1} (Step {global_step:06d}): "
+                
+                print(".........................................................")
+                print(".........................................................")
+                print(f"Epoch {epoch+1} (Step {global_step:06d}): "
                       f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}")
                 
                 wandb.log({"train/loss": train_loss,
@@ -123,14 +127,16 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
                     torch.save(model.state_dict(), "model/gptoss_best.pt")
                     artifact = wandb.Artifact("gptoss-model", type="model")
 
-                    artifact.add_file("model/gptoss_best.pt")
+                    # artifact.add_file("model/gptoss_best.pt")
                     wandb.log_artifact(artifact)
-                    print(f"✅ Saved new best model with val_loss={val_loss:.3f}")
+                    print("...............")
+                    print(f"✔️ Saved new best model with val_loss={val_loss:.3f}")
+                    print("...............")
 
 
         torch.save(model.state_dict(),"model/gptoss.pt")
         artifact = wandb.Artifact("gptoss-model", type="model")
-        artifact.add_file("model/gptoss.pt")
+        # artifact.add_file("model/gptoss.pt")
         wandb.log_artifact(artifact, aliases=["latest"])
 
         torch.save([train_losses,val_losses,tokens_seen],"model/losses.pt")
@@ -153,6 +159,13 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
         txt=generate_text(model,start_context)
         print(txt)
         wandb.log({"generated_text": wandb.Html(txt)}, step=global_step)
+        print(f"✅ Saved model checkpoint at epoch {epoch+1}")
+        print("\n")
+        print("==================================================")
+        print("==================================================")
+        
+        
+        
         clear_gpu_memory()
         
         
@@ -161,12 +174,13 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
 
 
 
+
 def trainer(model,train_loader,val_loader,device):
     learning_rate = 3e-4        
-    max_iters = 10   ## usually 2000 or more for real training should be more than the warmup_steps then the T_max of cosine decay will be max_iters - warmup_steps and will be positive 
+    max_iters = 20   ## usually 2000 or more for real training should be more than the warmup_steps then the T_max of cosine decay will be max_iters - warmup_steps and will be positive 
     warmup_steps = 5    
     min_lr = 3e-5           
-    eval_iters = 5
+    eval_iters = 10
     eval_freq=150          
     
     
@@ -201,8 +215,8 @@ def trainer(model,train_loader,val_loader,device):
 
 
     wandb.init(
-    project="gptoss-VS-gpt2",
-    name="gptoss-model",     
+    project="GPT-OSS-TRAINING",
+    name="gptoss-model-2",     
     group="model-comparison",  
     config={
         "learning_rate": learning_rate,
@@ -220,7 +234,8 @@ def trainer(model,train_loader,val_loader,device):
     train_losses, val_losses, tokens_seen = train_model(
         model, train_loader, val_loader, optimizer,scheduler, device,
         num_epochs=num_epochs, eval_freq=eval_freq, eval_iter=eval_iters,
-        start_context="a fast driver named Tim went for",
+        start_context="Once upon a day",
+        # start_context="a fast driver named Tim went for",
     )
 
     torch.save(model.state_dict(),"model/gotoss.pt")

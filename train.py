@@ -13,13 +13,13 @@ if __name__ == "__main__":
     context = "Once upon a day"
     
     model = Transformer(ModelConfig(
-        num_attention_heads=4,
+        num_attention_heads=16,######
         num_key_value_heads=4,
-        num_experts=4,
-        experts_per_token=1,
+        num_experts=12,
+        experts_per_token=2,
         num_hidden_layers=4,
-        hidden_size=128,
-        intermediate_size=128
+        hidden_size=512,
+        intermediate_size=512
     ), device)
 
     print(sum([p.numel() for p in model.parameters()]) / 1000000, "M parameters")
@@ -41,10 +41,10 @@ if __name__ == "__main__":
     # ), device)
 
 
-    context = "Once upon a day"
-    # These lines should also be inside the block
-    # torch.save(model.state_dict(), r"model\gptoss.pt")
-    generate_text(model, context)
+    # context = "Once upon a day"
+    # # These lines should also be inside the block
+    # # torch.save(model.state_dict(), r"model\gptoss.pt")
+    # generate_text(model, context)
     
     
     
