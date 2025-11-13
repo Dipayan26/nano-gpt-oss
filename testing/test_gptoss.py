@@ -786,6 +786,8 @@ class MLPBlock(torch.nn.Module):
         output = torch.zeros_like(t_flat)
         '''
         This creates a zero-initialized tensor of the same shape as t_flat:
+        eg - [5, 2880]
+        This will hold the final output after processing tokens through their assigned experts.
         ✔ Why is this needed?
         You will soon:
         Send each token → selected experts
@@ -904,20 +906,118 @@ class MLPBlock(torch.nn.Module):
             expert_out = swiglu(expert_out, limit=self.swiglu_limit)
             expert_out = self.experts[expert_idx][1](expert_out)  # Second linear
             '''
-            
-            
+                    self.experts = torch.nn.ModuleList([
+                        torch.nn.Sequential(
+                            torch.nn.Linear(
+                                config.hidden_size, 
+                                config.intermediate_size * 2 // self.world_size, 
+                                device=device, 
+                                dtype=torch.bfloat16
+                            ),
+                            torch.nn.Linear(
+                                config.intermediate_size // self.world_size, 
+                                config.hidden_size, 
+                                device=device, 
+                                dtype=torch.bfloat16
+                            )
+                        ) for _ in range(config.num_experts)
+                    ])
+                    
+            previously this separate 35 (num_experts) modules we created where each expert has its own separate two linear layers, now we are using those modules here one by one for each expert. like for expert 7 we are using self.experts[7]
+            >>> expert_out = self.experts[expert_idx][0](expert_out)
+            here we are using self.experts module from that, choosing module for the expert idx( 7 )  only and then using [0] means first linear layer of that module. the use swiglu and the 2nd linear layer specific to the expert (7).
+            and the swiglu make the dimension half so the 1st linear layer putput  is 2*hiddensize then sqiglu make it half then 2nd linear input is normal  hidden size
+            numeracally example: 
+            >>> expert_out = self.experts[expert_idx][0](expert_out)  # First linear + activation
+            >>> expert_out.shape
+            torch.Size([3, 5760])  # 2880 * 2 = 5760
+            >>> expert_out = swiglu(expert_out, limit=self.swiglu_limit)
+            >>> expert_out.shape
+            torch.Size([3, 2880])  # back to 2880
+            >>> expert_out = self.experts[expert_idx][1](expert_out)  # Second linear
+            >>> expert_out.shape
+            torch.Size([3, 2880])  # final output shape
             '''
-            
-            
-            
-            
             output[token_indices] += expert_out * weights.unsqueeze(-1)
+            '''
+            shape  example 
+            >>> output[token_indices].shape
+            torch.Size([3, 2880])
+            >>> weights.unsqueeze(-1).shape  ##weights = [0.6, 0.65, 0.62]  # shape [3]
+            torch.Size([3, 1])
+            >>> (expert_out * weights.unsqueeze(-1)).shape
+            torch.Size([3, 2880])
+            eg:
+            expert_out =
+                [[10, 20, 30],
+                [40, 50, 60],
+                [70, 80, 90]]
+            
+            weights = [0.6, 0.65, 0.62]
+            weights.unsqueeze(-1) is: # expanding the last dim 
+                                [[0.6],
+                                [0.65],
+                                [0.62]]
+            
+            expert_out * weights.unsqueeze(-1) =
+                [[10*0.6, 20*0.6, 30*0.6],
+                [40*0.65, 50*0.65, 60*0.65],
+                [70*0.62, 80*0.62, 90*0.62]]
+                
+            final output = [
+                            [0.6, 0.6, 0.6],
+                            [0.65,0.65,0.65],
+                            [0.62,0.62,0.62]
+                            ]
+            
+            output[token_indices] will be updated by adding this final output to it to the corresponding token positions.
+            ## created previously 
+            output =
+                    [
+                    [0, 0, 0, ..., 0],   # token 0
+                    [0, 0, 0, ..., 0],   # token 1
+                    [0, 0, 0, ..., 0],   # token 2
+                    [0, 0, 0, ..., 0],   # token 3
+                    [0, 0, 0, ..., 0],   # token 4
+                    ]
+                    
+            token_indices = tensor([0, 1, 2])
+            
+            Meaning:
+                token 0 is routed to this expert
+                token 1 is routed to this expert
+                token 2 is routed to this expert
+            
+            output[token_indices]+=
+            means  
+            output[0] += [ 6.00, 12.00, 18.00, 24.00 ]
+            output[1] += [32.50, 39.00, 45.50, 52.00]
+            output[2] += [ 0.62,  1.24,  1.86,  2.48]
+            Other rows (3 and 4) remain zero because those tokens were not routed to this expert.
+            so finally
+            output =
+                        [
+                        [ 6.00, 12.00, 18.00, 24.00 ],   # token 0 updated
+                        [32.50, 39.00, 45.50, 52.00 ],   # token 1 updated
+                        [ 0.62,  1.24,  1.86,  2.48 ],   # token 2 updated
+                        [ 0.00,  0.00,  0.00,  0.00 ],   # token 3 untouched
+                        [ 0.00,  0.00,  0.00,  0.00 ]    # token 4 untouched
+                        ]
+            '''
+            '''
+            This accumulates contributions from multiple experts if a token routes to more than one expert.
+            
+            here we are adding the expert output to the final output buffer for the tokens assigned to this expert.
+            weights.unsqueeze(-1) changes shape from [num_tokens_for_this_expert] to [num_tokens_for_this_expert, 1] so it can broadcast during multiplication.
+            This scales each token’s expert output by the routing softmax weight before adding it to the final output.
+            '''
         
         if self.world_size > 1:
             dist.all_reduce(output, op=dist.ReduceOp.SUM)
         
         output = output.view(seq_len, hidden_size)
         return x + output
+        # return output
 
 
 
@@ -926,89 +1026,6 @@ a.dtype
 mlp_block = MLPBlock(ModelConfig())
 out = mlp_block(a)
 out.shape
-
-
-gate = torch.nn.Linear(
-            2880, 32, dtype=torch.bfloat16
-        )
-
-
-out = gate(a)
-out.shape
-
-
-
-experts = torch.nn.ModuleList([
-    torch.nn.Sequential(
-        torch.nn.Linear(
-            ModelConfig.hidden_size, 
-            ModelConfig.intermediate_size * 2,
-            dtype=torch.bfloat16
-        ),
-        torch.nn.Linear(
-            ModelConfig.intermediate_size,
-            ModelConfig.hidden_size, 
-            dtype=torch.bfloat16
-        )
-    ) for _ in range(ModelConfig.num_experts)
-])
-
-
-'''
-    >>> experts
-    ModuleList((0-31): 32 x Sequential(
-        (0): Linear(in_features=2880, out_features=5760, bias=True)
-        (1): Linear(in_features=2880, out_features=2880, bias=True)
-    )
-    )
-'''
-
-
-
-class MyModule(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.linears = nn.ModuleList([nn.Linear(10, 10) for i in range(10)])
-
-    def forward(self, x):
-        # ModuleList can act as an iterable, or be indexed using ints
-        for i, l in enumerate(self.linears):
-            # x = self.linears[i // 2](x) + l(x)
-            print(f'Layer {i} input shape: ', x.shape)
-            x = l(x)
-        return x
-
-
-
-
-
-MyModule().parameters
-a = torch.randn( (5, 10)) # (batch_size, seq_length , hidden_size)
-model = MyModule()
-out = model(a)
-out.shape
-
-
-expert_idx = 7
-mask = [True, True, True, False, False]
-token_indices = torch.where(torch.tensor(mask))[0]
-
-expert_indices_flat =torch.Tensor([[7, 3,12, 1],
-                        [4,19,22, 7],
-                        [7, 3,12, 1],
-                        [4,19,22, 9],
-                        [4,19,22, 9]]
-)
-
-expert_indices_flat[token_indices] == expert_idx
-
-(expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)
-
-expert_pos = (expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)[1]
-
-
-
-
 
 
 
