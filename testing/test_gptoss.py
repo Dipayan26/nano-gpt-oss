@@ -9,6 +9,9 @@ import torch.distributed as dist
 import torch
 import torch.nn as nn
 
+# import wandb
+# wandb.login()
+
 print(torch.__version__)  # e.g., '2.0.1+cu118'
 
 vocab_size = 50000

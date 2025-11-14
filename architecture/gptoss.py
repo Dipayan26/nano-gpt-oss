@@ -8,7 +8,7 @@ import torch.distributed as dist
 
 from dataclasses import dataclass
 
-help(dataclass)
+# help(dataclass)
 
 @dataclass
 class ModelConfig:

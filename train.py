@@ -5,6 +5,9 @@ import torch
 from inference import generate_text
 from training.trainer import trainer
 
+
+
+
 # --- THIS IS THE FIX ---
 # Wrap all your "main" code in this block
 if __name__ == "__main__":
@@ -15,8 +18,8 @@ if __name__ == "__main__":
     model = Transformer(ModelConfig(
         num_attention_heads=16,######
         num_key_value_heads=4,
-        num_experts=12,
-        experts_per_token=2,
+        num_experts=32,
+        experts_per_token=4,
         num_hidden_layers=4,
         hidden_size=512,
         intermediate_size=512
