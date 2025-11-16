@@ -8,9 +8,36 @@ from tqdm import tqdm
 batch_size=5
 context_len=10
 
+#____________________________________
+#____________________________________
+import pandas as pd
+data = pd.read_csv(r'/home/dipayan/Documents/nano-gpt-oss/datasets/test_data.csv')
+list = data['0'].to_list()
+list = list[:10]
+#____________________________________
+
+# Load model directly
+from transformers import AutoTokenizer, AutoModelForMaskedLM
+
+import re
+tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
+# model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t33_650M_UR50D")
+
+sequence_Example = "A E T C Z A O A A E"
+sequence_Example = re.sub(r"[UZOB]", "X", sequence_Example)
+encoded_input = tokenizer(sequence_Example)
+#____________________________________
+
 dataset = load_dataset("roneneldan/TinyStories")
 
-dataset2 = dataset['train']['text'][:10]
+# dataset2 = dataset['train'][0]['text'][:10]
+# dataset2 = dataset['train'][0]
+
+
+#____________________________________________
+train_text = "".join(ex for ex in list[:5])
+val_text = "".join(ex for ex in list[5:])
+#____________________________________________
 
 train_text = " ".join([ex["text"] for ex in dataset['train']])
 val_text = " ".join([ex["text"] for ex in dataset['validation']])
@@ -18,9 +45,9 @@ val_text = " ".join([ex["text"] for ex in dataset['validation']])
 # train_text = " ".join([ex["text"] for ex in dataset['train']])
 # val_text = " ".join([ex["text"] for ex in dataset['validation']])
 
-# dataset['train']['text'][0]
+dataset['train']['text'][0]
+train_text[0:1000]
 # train_text[0:10]
-# # train_text[0:10]
 
 tokenizer = get_tokenizer()
 print("tokenizing...")

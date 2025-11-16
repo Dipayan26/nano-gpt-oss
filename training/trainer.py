@@ -220,7 +220,7 @@ def trainer(model,train_loader,val_loader,device):
 
     wandb.init(
     project="GPT-OSS-TRAINING",
-    name="gptoss-model-3",     
+    name="gptoss-model-4",     
     group="model-comparison",  
     config={
         "learning_rate": learning_rate,
@@ -230,19 +230,7 @@ def trainer(model,train_loader,val_loader,device):
         "eval_iters": eval_iters,
         "eval_freq": eval_freq,
         "device": device,
-        "model_type": "gpt-oss",
-        "model-note":
-        '''
-        model = Transformer(ModelConfig(
-        num_attention_heads=16,######
-        num_key_value_heads=4,
-        num_experts=32,
-        experts_per_token=4,
-        num_hidden_layers=4,
-        hidden_size=512,
-        intermediate_size=512), device)
-        
-        '''
+        "model_type": "gpt-oss"
     }
 )
 
