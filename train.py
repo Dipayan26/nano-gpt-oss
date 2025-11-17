@@ -1,5 +1,6 @@
 # All your imports go here at the top
-from training.data_loader import train_loader, val_loader
+from training.data_loader_protein import train_loader, val_loader
+# from datasets.dataloader_protein import train_loader, val_loader
 from architecture.gptoss import Transformer, ModelConfig
 import torch
 from inference import generate_text
@@ -13,7 +14,7 @@ from training.trainer import trainer
 if __name__ == "__main__":
 
     device = "cuda:0"
-    context = "Once upon a day"
+    # context = "Once upon a day"
     
     model = Transformer(ModelConfig(
         num_attention_heads=16,######
@@ -48,6 +49,7 @@ if __name__ == "__main__":
     # # These lines should also be inside the block
     # # torch.save(model.state_dict(), r"model\gptoss.pt")
     # generate_text(model, context)
+    
     
     
     

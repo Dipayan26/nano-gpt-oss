@@ -1,9 +1,11 @@
 import torch
 from torch.nn import functional as F
+from transformers import AutoTokenizer, AutoModelForMaskedLM
 
 # from architecture.tokenizer import get_tokenizer
 from architecture.tokenizer import get_tokenizer
 
+tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D")
 
 
 # #_____________________________________________________________
@@ -31,7 +33,7 @@ from architecture.tokenizer import get_tokenizer
 
 
 context_len=8192
-tokenizer= get_tokenizer()
+# tokenizer= get_tokenizer()
 
 def text_to_token_ids(text, tokenizer):
     encoded = tokenizer.encode(text)
