@@ -1,6 +1,6 @@
 import torch
-# from inference import generate_text
-from inference_protein import generate_text
+from inference import generate_text
+# from inference_protein import generate_text
 import time,os,gc
 import wandb
 from torch.optim.lr_scheduler import LinearLR, SequentialLR, CosineAnnealingLR
@@ -220,7 +220,7 @@ def trainer(model,train_loader,val_loader,device):
 
 
     wandb.init(
-    project="Protein_binder_MOE",
+    project="GPT-OSS",
     name="model-1",     
     group="testing-1",  
     config={
@@ -235,12 +235,28 @@ def trainer(model,train_loader,val_loader,device):
     }
 )
 
+#     wandb.init(
+#     project="Protein_binder_MOE",
+#     name="model-1",     
+#     group="testing-1",  
+#     config={
+#         "learning_rate": learning_rate,
+#         "max_iters": max_iters,
+#         "warmup_steps": warmup_steps,
+#         "min_lr": min_lr,
+#         "eval_iters": eval_iters,
+#         "eval_freq": eval_freq,
+#         "device": device,
+#         "model_type": "gpt-oss"
+#     }
+# )
+
     start_time = time.time()
     train_losses, val_losses, tokens_seen = train_model(
         model, train_loader, val_loader, optimizer,scheduler, device,
         num_epochs=num_epochs, eval_freq=eval_freq, eval_iter=eval_iters,
-        # start_context="Once upon a day",
-        start_context="MKDLRLQGPYRKYIPYN",
+        start_context="Once upon a day",
+        # start_context="MKDLRLQGPYRKYIPYN",
         # start_context="a fast driver named Tim went for",
     )
 

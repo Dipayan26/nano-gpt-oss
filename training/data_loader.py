@@ -10,7 +10,7 @@ context_len=10
 
 dataset = load_dataset("roneneldan/TinyStories")
 
-dataset2 = dataset['train']['text'][:10]
+# dataset2 = dataset['train']['text'][:10]
 
 train_text = " ".join([ex["text"] for ex in dataset['train']])
 val_text = " ".join([ex["text"] for ex in dataset['validation']])
