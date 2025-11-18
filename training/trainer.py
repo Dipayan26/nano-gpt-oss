@@ -235,21 +235,7 @@ def trainer(model,train_loader,val_loader,device):
     }
 )
 
-#     wandb.init(
-#     project="Protein_binder_MOE",
-#     name="model-1",     
-#     group="testing-1",  
-#     config={
-#         "learning_rate": learning_rate,
-#         "max_iters": max_iters,
-#         "warmup_steps": warmup_steps,
-#         "min_lr": min_lr,
-#         "eval_iters": eval_iters,
-#         "eval_freq": eval_freq,
-#         "device": device,
-#         "model_type": "gpt-oss"
-#     }
-# )
+
 
     start_time = time.time()
     train_losses, val_losses, tokens_seen = train_model(

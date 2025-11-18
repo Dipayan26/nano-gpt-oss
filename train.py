@@ -1,5 +1,5 @@
 # All your imports go here at the top
-from training.data_loader_protein import train_loader, val_loader
+from training.data_loader import train_loader, val_loader
 # from datasets.dataloader_protein import train_loader, val_loader
 from architecture.gptoss import Transformer, ModelConfig
 import torch
