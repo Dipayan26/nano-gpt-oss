@@ -678,6 +678,8 @@ Input x shape: (N, 2*M) — SwiGLU expects the last dim to be 2 * inner_dim. Typ
 # a.shape
 # out = swiglu(a)
 # out.shape
+from architecture.tokenizer import get_tokenizer
+
 
 
 # Mixture of Experts
@@ -762,6 +764,8 @@ class MLPBlock(torch.nn.Module):
                 )
             ) for _ in range(config.num_experts)
         ])
+        
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         seq_len, hidden_size = x.shape #[5,2880]-->  (seq_length/ tokens-->5, hidden_size-->2880)
