@@ -22,8 +22,8 @@ if __name__ == "__main__":
         num_experts=32,
         experts_per_token=4,
         num_hidden_layers=4,
-        hidden_size=512,
-        intermediate_size=512
+        hidden_size=256,
+        intermediate_size=256
     ), device)
 
     print(sum([p.numel() for p in model.parameters()]) / 1000000, "M parameters")
