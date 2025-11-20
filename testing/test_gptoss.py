@@ -40,7 +40,7 @@ import torch.distributed as dist
 
 from dataclasses import dataclass
 
-help(dataclass)
+# help(dataclass)
 
 #_______________________________________________________________
 #_______________________________________________________________
@@ -748,11 +748,12 @@ class MLPBlock(torch.nn.Module):
         seq_len, hidden_size = x.shape #[5,2880]-->  (seq_length/ tokens-->5, hidden_size-->2880)
         t = self.norm(x) # RMSNorm # shape [5,2880]
         g = self.gate(t) #32 experts logits  #[5,32]--> (seq_length/ tokens-->5, num_experts-->32)
-        
         # Get top-k experts means top 4 among 32 experts for each token
         #For each token, take top 4 experts with highest gate score.
         experts = torch.topk(g, k=self.experts_per_token, dim=-1, sorted=True)
+        print(' experts values shape: ', experts)
         expert_weights = torch.nn.functional.softmax(experts.values, dim=-1)
+        print(' expert weights shape: ', expert_weights)
         '''
         We only softmax the top-4 scores (not all 32).
         Softmax converts them into probabilities.
