@@ -10,14 +10,30 @@ context_len=10
 
 dataset = load_dataset("roneneldan/TinyStories")
 
-# dataset2 = dataset['train']['text'][:10]
+# dataset2 = dataset['train']['text'][:10000]
 
-train_text = " ".join([ex["text"] for ex in dataset['train']])
-val_text = " ".join([ex["text"] for ex in dataset['validation']])
+# train_text = " ".join(ex["text"] for ex in dataset['train'])
+# val_text = " ".join([ex["text"] for ex in dataset['validation']])
+
+
+# ##############################################################################
+# # Select first 10,000 samples (example)
+# subset = dataset["train"][:1000]
+# train_text = " ".join(ex["text"] for ex in subset)
+
+# subset_val = dataset["validation"][:500]
+# val_text = " ".join(ex["text"] for ex in subset_val)
+
+train_text = " ".join(dataset["train"]["text"][:10000])       # fast: slice column then join
+val_text   = " ".join(dataset["validation"]["text"][:1000])
 
 # train_text = " ".join([ex["text"] for ex in dataset['train']])
 # val_text = " ".join([ex["text"] for ex in dataset['validation']])
 
+# train_text = " ".join([ex["text"] for ex in dataset['train']])
+# val_text = " ".join([ex["text"] for ex in dataset['validation']])
+
+##############################################################################
 # dataset['train']['text'][0]
 # train_text[0:10]
 # # train_text[0:10]
@@ -27,7 +43,7 @@ print("tokenizing...")
 
 # train_tokens = tokenizer.encode(train_text[0:10])
 train_tokens = tokenizer.encode(train_text[:1000])
-val_tokens = tokenizer.encode(val_text[:100])
+val_tokens = tokenizer.encode(val_text[:500])
 print("tokenized")
 
 
@@ -62,7 +78,7 @@ class TextDataset(Dataset):
 train_dataset = TextDataset(train_tokens, max_length=context_len, stride=context_len)
 val_dataset = TextDataset(val_tokens, max_length=context_len, stride=context_len)
 
-# train_dataset[0]
+train_dataset[1]
 # train_dataset[1]
 # train_dataset[2]
 # val_dataset[0]

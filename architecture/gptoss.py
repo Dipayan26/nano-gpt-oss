@@ -308,6 +308,7 @@ class MLPBlock(torch.nn.Module):
         
         # Get top-k experts
         experts = torch.topk(g, k=self.experts_per_token, dim=-1, sorted=True)
+        print(' experts  : ', experts.values.shape)
         expert_weights = torch.nn.functional.softmax(experts.values, dim=-1)
         expert_indices = experts.indices
         
@@ -317,16 +318,20 @@ class MLPBlock(torch.nn.Module):
         expert_weights_flat = expert_weights.view(-1, self.experts_per_token)
         
         output = torch.zeros_like(t_flat)
+        my_dict = {}
         
         # Process each expert
         for expert_idx in range(self.num_experts):
             mask = (expert_indices_flat == expert_idx).any(dim=-1)
             if not mask.any():
                 continue
-                
+            
             token_indices = torch.where(mask)[0]
             expert_pos = (expert_indices_flat[token_indices] == expert_idx).nonzero(as_tuple=True)[1]
             
+            #***************************************************
+            # my_dict[f"expert_{expert_idx}"] = mask.sum().item()
+            #***************************************************
             expert_input = t_flat[token_indices]
             weights = expert_weights_flat[token_indices, expert_pos]
             
@@ -345,8 +350,6 @@ class MLPBlock(torch.nn.Module):
         return x + output
 
 
-
-
 class TransformerBlock(torch.nn.Module):
     def __init__(
         self,
@@ -360,10 +363,11 @@ class TransformerBlock(torch.nn.Module):
         self.mlp = MLPBlock(config, device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # print("transformer block Input :", x)
         x = self.attn(x)
         x = self.mlp(x)
+        print("layer idx :", self.layer_idx)
         return x
-
 
 
 class Transformer(torch.nn.Module):
@@ -376,14 +380,13 @@ class Transformer(torch.nn.Module):
         self.embedding = torch.nn.Embedding(
             config.vocab_size, config.hidden_size, device=device, dtype=torch.bfloat16
         )
+        
         self.block = torch.nn.ModuleList(
             [
-                TransformerBlock(config, layer_idx, device)
-                for layer_idx in range(config.num_hidden_layers)
+                TransformerBlock(config, layer_idx, device) for layer_idx in range(config.num_hidden_layers)
+                
             ]
         )
-        
-        
         
         self.norm = RMSNorm(config.hidden_size, device=device)
         self.unembedding = torch.nn.Linear(
@@ -395,14 +398,15 @@ class Transformer(torch.nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        print("printing Input :", x)
+        # inpx = x
+        # print("printing Input :", inpx)
         x = self.embedding(x)
         for block in self.block:
             x = block(x)
         x = self.norm(x)
         x = self.unembedding(x)
         return x
-
-
 
     @staticmethod
     def from_checkpoint(

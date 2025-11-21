@@ -30,6 +30,7 @@ def calcc(input_batch, target_batch, model,device):
     clear_gpu_memory()  
     return total_loss/len(input_batch)
 
+
 '''
 Why you sometimes must loop / average
 
@@ -113,8 +114,6 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
                 train_losses.append(train_loss)
                 val_losses.append(val_loss)
                 track_tokens_seen.append(tokens_seen)
-                
-                
                 print(".........................................................")
                 print(".........................................................")
                 print(f"Epoch {epoch+1} (Step {global_step:06d}): "
@@ -134,7 +133,6 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
                     print("...............")
                     print(f"✔️ Saved new best model with val_loss={val_loss:.3f}")
                     print("...............")
-
 
         torch.save(model.state_dict(),"model/gptoss.pt")
         artifact = wandb.Artifact("gptoss-model", type="model")
@@ -158,20 +156,28 @@ def train_model(model, train_loader, val_loader, optimizer,scheduler, device, nu
         You can compute metrics like “best epoch,” convergence rate, or visualize learning behavior.
         '''
 
-        txt=generate_text(model,start_context)
-        print(txt)
-        wandb.log({"generated_text": wandb.Html(txt)}, step=global_step)
+        # txt=generate_text(model,start_context)
+        # print(txt)
+        # wandb.log({"generated_text": wandb.Html(txt)}, step=global_step)
         print(f"✅ Saved model checkpoint at epoch {epoch+1}")
         print("\n")
         print("==================================================")
         print("==================================================")
         
-        
-        
         clear_gpu_memory()
         
         
     return train_losses, val_losses, track_tokens_seen
+
+
+
+
+
+
+
+
+
+
 
 
 

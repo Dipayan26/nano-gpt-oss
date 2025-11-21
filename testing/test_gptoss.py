@@ -774,9 +774,9 @@ class MLPBlock(torch.nn.Module):
         # Get top-k experts means top 4 among 32 experts for each token
         #For each token, take top 4 experts with highest gate score.
         experts = torch.topk(g, k=self.experts_per_token, dim=-1, sorted=True)
-        print(' experts values shape: ', experts)
+        print(' experts  : ', experts)
         expert_weights = torch.nn.functional.softmax(experts.values, dim=-1)
-        print(' expert weights shape: ', expert_weights)
+        print(' expert weights : ', expert_weights)
         '''
         We only softmax the top-4 scores (not all 32).
         Softmax converts them into probabilities.
@@ -1123,7 +1123,8 @@ out = mlp_block(a)
 # out.shape
 
 >>> out = mlp_block(a)
- experts values shape:  torch.return_types.topk(
+
+ experts:  torch.return_types.topk( **********************************
 values=tensor([[1.0703, 0.9844, 0.8555, 0.7969],
         [0.9766, 0.8242, 0.7773, 0.6875],
         [0.9961, 0.9336, 0.9062, 0.7656],
@@ -1135,17 +1136,21 @@ indices=tensor([[17, 25,  3,  5],
         [17, 25,  3,  5],
         [ 3, 21, 25, 13],
         [ 3, 21, 25, 13]]))
- expert weights shape:  tensor([[0.2871, 0.2637, 0.2314, 0.2188],
+
+ expert weights :  tensor([[0.2871, 0.2637, 0.2314, 0.2188],************************
         [0.2910, 0.2500, 0.2393, 0.2188],
         [0.2734, 0.2578, 0.2500, 0.2178],
         [0.2988, 0.2520, 0.2314, 0.2178],
         [0.3047, 0.2520, 0.2256, 0.2178]], dtype=torch.bfloat16,
        grad_fn=<SoftmaxBackward0>)
+       
  expert indices:  tensor([[17, 25,  3,  5],
         [ 3, 21, 25, 13],
         [17, 25,  3,  5],
         [ 3, 21, 25, 13],
         [ 3, 21, 25, 13]])
+        
+        
  t flat shape:  tensor([[0.0938, 0.1875, 0.3750, 0.5625, 0.7500, 0.9375, 1.1250, 1.3125, 1.5000,
          1.6875],
         [0.4258, 1.0625, 0.6406, 0.7461, 0.8516, 0.9609, 1.0625, 1.1719, 1.2812,
@@ -1323,7 +1328,7 @@ indices=tensor([[17, 25,  3,  5],
  Processing expert index:  13
  mask for expert index  13 :  tensor([False,  True, False,  True,  True])
  token indices for expert index  13 :  tensor([1, 3, 4])
- expert positions for expert index  13 :  tensor([3, 3, 3])
+ expert positions for expert index  13 :  tensor([3, 3, 3])************
  expert input for expert index  13 :  tensor([[0.4258, 1.0625, 0.6406, 0.7461, 0.8516, 0.9609, 1.0625, 1.1719, 1.2812,
          1.3828],
         [0.4824, 1.0625, 0.6758, 0.7734, 0.8711, 0.9648, 1.0625, 1.1562, 1.2578,
@@ -1593,6 +1598,23 @@ indices=tensor([[17, 25,  3,  5],
 
 
 
+my_dict = {
+    "key1": ["valueA", "valueB", "valueC"],
+    "key2": ["valueX", "valueY"]
+}
+
+# Adding a new value to an existing key
+my_dict["key1"].append("valueD")
+
+# Accessing values
+print(my_dict["key1"])  # Output: ['valueA', 'valueB', 'valueC', 'valueD']
+print(my_dict["key1"][0]) # Output: valueA
+
+
+my_dict = {"name": "Alice", "age": 30}
+my_dict["city"] = "New York"
+print(my_dict)
+# Output: {'name': 'Alice', 'age': 30, 'city': 'New York'}
 
 
 
@@ -1600,26 +1622,83 @@ indices=tensor([[17, 25,  3,  5],
 
 
 
+a = [ 18049,   7557,    261,   2163, 181110, 126431, 174852,   1386,  98232,
+        150381,  50886,  94929, 127426,  99477,  67433, 175191,  53520, 149700,
+        137793,  56558, 126140, 174320, 105012, 160121, 106162,  64111, 130982,
+        165840,  73471, 181884, 143700, 152113,  20144,  30311, 182616, 104182,
+        110371,  56988, 126196,  76229,  39346, 118494, 133216, 114313,  32690,
+         90497,  40216,  22723, 165456, 118388, 165505, 161172, 107882, 125632,
+        165268, 140893,  30559, 196652, 195459,  16093, 125049,  28480,  46828,
+        130050, 152707,  90721,  56931, 142329, 166089, 157585,   1102, 145466,
+         70332, 188677, 126739,  49636, 187936,  90735, 123117, 189602,  17310,
+        141168,  57809,  69815, 199190, 136918,  50036, 123810,  55430, 190382,
+        199596, 116724,   1412,   1058,  71272,  67168, 148436, 190276, 128814,
+          7472, 110425, 195330,  69860]
+
+
+len(a)
 
 
 
 
 
+'''
+rinting Input : tensor([ 1770,  2023, 63202,   261,  5057,   402,  1335, 27628,   364,    43],
+       device='cuda:0')
+ experts  :  torch.Size([10, 4])
+layer idx : 0
+ experts  :  torch.Size([10, 4])
+layer idx : 1
+ experts  :  torch.Size([10, 4])
+layer idx : 2
+ experts  :  torch.Size([10, 4])
+layer idx : 3
+ experts  :  torch.Size([10, 4])
+layer idx : 4
+ experts  :  torch.Size([10, 4])
+layer idx : 5
+ experts  :  torch.Size([10, 4])
+layer idx : 6
+ experts  :  torch.Size([10, 4])
+layer idx : 7
+printing Input : tensor([  5143,    290,  51196,    326,   9295,    634,  27628,   6635, 108008,
+            11], device='cuda:0')
+ experts  :  torch.Size([10, 4])
+layer idx : 0
+ experts  :  torch.Size([10, 4])
+layer idx : 1
+ experts  :  torch.Size([10, 4])
+layer idx : 2
+ experts  :  torch.Size([10, 4])
+layer idx : 3
+ experts  :  torch.Size([10, 4])
+layer idx : 4
+ experts  :  torch.Size([10, 4])
+layer idx : 5
+ experts  :  torch.Size([10, 4])
+layer idx : 6
+ experts  :  torch.Size([10, 4])
+layer idx : 7
+printing Input : tensor([ 7201,   316,  5143,   290, 51196,   483,  1335,  3317,    11,   813],
+       device='cuda:0')
+ experts  :  torch.Size([10, 4])
+layer idx : 0
+ experts  :  torch.Size([10, 4])
+layer idx : 1
+ experts  :  torch.Size([10, 4])
+layer idx : 2
+ experts  :  torch.Size([10, 4])
+layer idx : 3
+ experts  :  torch.Size([10, 4])
+layer idx : 4
+ experts  :  torch.Size([10, 4])
+layer idx : 5
+ experts  :  torch.Size([10, 4])
+layer idx : 6
+ experts  :  torch.Size([10, 4])
+layer idx : 7
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+'''
 
 
 

@@ -21,7 +21,7 @@ if __name__ == "__main__":
         num_key_value_heads=4,
         num_experts=32,
         experts_per_token=4,
-        num_hidden_layers=4,
+        num_hidden_layers=8,
         hidden_size=256,
         intermediate_size=256
     ), device)
